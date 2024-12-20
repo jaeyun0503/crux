@@ -1,0 +1,9 @@
+
+// test declaration
+
+let global: int;
+let a: [bool; 5];
+
+fn main() {
+
+}

@@ -1,0 +1,13 @@
+// test using expression as index in assignment
+
+let a: [int; 3];
+let b: [int; 10];
+
+fn main() {
+
+   b[5] = 2;
+   a[1+1] = 100;
+
+  printInt(a[2]);
+}
+

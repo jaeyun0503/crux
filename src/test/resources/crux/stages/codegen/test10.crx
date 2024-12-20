@@ -1,0 +1,7 @@
+// test global array access
+let x: [int; 3];
+
+fn main() {
+  x[1] = 42;
+  printInt(x[1]);
+}

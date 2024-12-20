@@ -1,0 +1,19 @@
+// non-recursive fib
+
+fn main() {
+  let i: int;
+  i = 0;
+  let a: int;
+  let b: int;
+  a = 0;
+  b = 1;
+  while (i < 10) {
+    printInt(b);
+    println();
+    let c: int;
+    c = a + b;
+    a = b;
+    b = c;
+    i = i + 1;
+  }
+}

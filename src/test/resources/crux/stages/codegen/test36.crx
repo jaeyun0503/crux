@@ -1,0 +1,10 @@
+// test print character
+
+fn main() {
+  let i: int;
+  i=0;
+  while (i < 11) {
+    printChar(readChar());
+    i=i+1;
+  }
+}

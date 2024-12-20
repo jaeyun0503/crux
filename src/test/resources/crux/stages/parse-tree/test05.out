@@ -1,0 +1,13 @@
+program
+  declList
+    decl
+      varDecl
+        type
+    decl
+      arrayDecl
+        type
+    decl
+      functionDefn
+        paramList
+        stmtBlock
+          stmtList

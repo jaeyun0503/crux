@@ -1,0 +1,24 @@
+
+main() {
+  a;
+  a = 0;
+  b;
+  b = 0;
+  while ((a < 3)) {
+    if (true) {
+      if (true) {
+        while ((b < 3)) {
+          printInt(5);
+          b = (b + 1);
+        }
+      } else {
+        printInt(5);
+      }
+    } else {
+    }
+    printInt(5);
+    a = (a + 1);
+  }
+  printInt(5);
+}
+

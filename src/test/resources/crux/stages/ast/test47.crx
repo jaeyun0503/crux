@@ -1,0 +1,28 @@
+// scoping test
+let a: int;
+
+fn main() {
+  a = 1;
+  if (true) {
+    let a: int;
+    a = 2;
+    if (true) {
+      a = a * 10;
+      let a: int;
+      a = 3;
+      if (true) {
+        let a: bool;
+        a = true;
+        printBool(a);
+        println();
+      }
+      printInt(a);
+      println();
+    }
+    printInt(a);
+    println();
+  }
+  printInt(a);
+  println();
+}
+  

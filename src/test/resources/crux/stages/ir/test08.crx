@@ -1,0 +1,9 @@
+// test multiple functions
+
+fn foo() {
+  printInt(5);
+}
+
+fn main() {
+  foo();
+}

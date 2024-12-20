@@ -1,0 +1,10 @@
+
+main() {
+  i;
+  i = 0;
+  while ((i < 11)) {
+    printChar(readChar());
+    i = (i + 1);
+  }
+}
+

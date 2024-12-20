@@ -1,0 +1,23 @@
+// test nested if-else and loop statements
+
+fn main() {
+  let a: int;
+  a = 0;
+  let b: int;
+  b = 0;
+  while (a < 3) {
+    if (true) {
+      if (true) {
+        while (b < 3) {
+          printInt(5);
+          b = b + 1;
+        }
+      } else {
+        printInt(5);
+      }
+    }
+    printInt(5);
+    a = a + 1;
+  }
+  printInt(5);
+}

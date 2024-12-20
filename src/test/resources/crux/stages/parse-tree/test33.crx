@@ -1,0 +1,23 @@
+// test logical and
+fn myTrue() -> bool {
+  printInt(1);
+  println();
+  return true;
+}
+
+fn myFalse() -> bool {
+  printInt(0);
+  println();
+  return false;
+}
+
+fn main() {
+  printBool(myTrue() && myTrue());
+  println();
+  printBool(myFalse() && myTrue());
+  println();
+  printBool(myTrue() && myFalse());
+  println();
+  printBool(myFalse() && myFalse());
+  println();
+}

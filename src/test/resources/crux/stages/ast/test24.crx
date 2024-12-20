@@ -1,0 +1,13 @@
+// test using array cell as index in assignment
+
+let a: [int; 3];
+let b: [int; 10];
+  
+fn main() {
+
+  b[5] = 2;
+  a[b[5]] = 100;
+
+  printInt(a[2]);
+}
+

@@ -1,0 +1,21 @@
+// test functions with value must have return
+
+fn validReturn1(a: int) -> int {
+  if (true) {
+    if (false) {
+      a = 3;
+    } else {
+      while (false) {
+        return a;
+      }
+    }
+    return 4;
+  } else {
+    return a;
+  }
+}
+
+fn main() {
+  printInt(3);
+  printInt(validReturn1(6));
+}

@@ -1,0 +1,8 @@
+// test presence of built-in functions
+
+fn main() {
+  printInt(7);
+  printBool(true);
+  println();
+  readInt();
+}

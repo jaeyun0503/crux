@@ -1,0 +1,11 @@
+// shadow global with local
+
+let a: int;
+
+fn main() {
+  a = 1;
+
+  let a: int;
+  a = 2;
+  printInt(a);
+}

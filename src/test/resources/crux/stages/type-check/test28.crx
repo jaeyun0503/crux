@@ -1,0 +1,17 @@
+// test statement with non-void type
+
+fn myInt(a: int) -> int {
+  printInt(a);
+  return a;
+}
+
+fn myPrint() {
+  myInt(7);
+  myInt(8);
+  myInt(9);
+}
+
+fn main() {
+  myPrint();
+}
+  

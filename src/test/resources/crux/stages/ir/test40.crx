@@ -1,0 +1,30 @@
+// test comparisons
+
+fn test(a: int, b: int) {
+  printBool(a >= b);
+  println();
+  printBool(a <= b);
+  println();
+  printBool(a != b);
+  println();
+  printBool(a == b);
+  println();
+  printBool(a < b);
+  println();
+  printBool(a > b);
+  println();
+}
+
+fn main() {
+  let i: int;
+  let j: int;
+  i = 0;
+  while (i <= 4) {
+    j = 0;
+    while (j <= 4) {
+       test(i, j);
+       j = j + 1;
+    }
+    i = i + 1;
+  }
+}

@@ -1,0 +1,6 @@
+// test global variable with mips instruction name
+let addi: int;
+fn main() {
+  addi = readInt();
+  printInt(addi);
+}

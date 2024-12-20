@@ -1,0 +1,40 @@
+// bubblesort
+let a: [int; 14];
+
+fn bubblesort() {
+  let swapped: bool;
+  swapped = true;
+  while (swapped) {
+    swapped = false;
+    let i: int;
+    i = 0;
+    while (i < 13) {
+      if (a[i] > a[i+1]) {
+        let tmp: int;
+        tmp = a[i];
+        a[i] = a[i+1];
+        a[i+1] = tmp;
+        swapped = true;
+      }
+      i = i + 1;
+    }
+  }
+}
+
+fn main() {
+  let i: int;
+  i = 0;
+  while (i < 14) {
+    a[i] = 14-i;
+    i = i + 1;
+  }
+
+  bubblesort();
+
+  i = 0;
+  while (i < 14) {
+    printInt(a[i]);
+    println();
+    i = i + 1;
+  }
+}

@@ -1,0 +1,7 @@
+// test local variable
+
+fn main() {
+  let a: int;
+  a = 42;
+  printInt(a);
+}

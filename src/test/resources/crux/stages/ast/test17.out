@@ -1,0 +1,18 @@
+
+a;
+main() {
+  a = 20;
+  while ((a >= 5)) {
+    if ((a > 10)) {
+      if ((a < 5)) {
+        break;
+      } else {
+      }
+      a = (a / (0 - 2));
+      continue;
+    } else {
+    }
+    a = (a - 4);
+  }
+}
+

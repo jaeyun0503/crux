@@ -1,0 +1,9 @@
+// test parameter passing
+
+fn rec(a: int) {
+  printInt(a);
+}
+
+fn main() {
+  rec(41);
+}

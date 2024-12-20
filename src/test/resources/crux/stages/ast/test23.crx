@@ -1,0 +1,11 @@
+// test assignments (including simple array assigments)
+
+let a: int;
+let b: bool;
+let c: [int; 1];
+
+fn main() {
+  a = 0;
+  b = false;
+  c[0] = 0;
+}

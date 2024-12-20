@@ -1,0 +1,7 @@
+program
+  declList
+    decl
+      functionDefn
+        paramList
+        stmtBlock
+          stmtList

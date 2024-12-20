@@ -1,0 +1,11 @@
+// test loop
+
+fn main() {
+  let a: int;
+  a = 0;
+  while (a < 3) {
+    printInt(a);
+    println();
+    a = a + 1;
+  }
+}

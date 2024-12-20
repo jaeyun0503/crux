@@ -1,0 +1,5 @@
+// test add
+
+fn main() {
+  printInt(1 + 1);
+}

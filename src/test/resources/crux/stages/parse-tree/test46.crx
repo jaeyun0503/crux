@@ -1,0 +1,38 @@
+// test array
+
+let x: [int; 5];
+
+fn main() {
+  let canary_begin: int;
+  let canary_end: int;
+  let outer: int;
+  let inner: int;
+  canary_begin = 0;
+  canary_end = 0;
+
+  outer = 4;
+  inner = 2;
+  while (outer >= 0) {
+    while (inner >= 0) {
+      x[outer] = inner * 1000 + outer * 100 + 99;
+      inner = inner - 1;
+    }
+    inner = 2;
+    outer = outer - 1;
+  }
+
+  inner = 0;
+  outer = 0;
+  while (outer < 5) {
+    while (inner < 3) {
+      printInt(x[outer]);
+      inner = inner + 1;
+    }
+    println();
+    inner = 0;
+    outer = outer + 1;
+  }
+  printInt(canary_begin);
+  printInt(canary_end);
+}
+	

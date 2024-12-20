@@ -1,0 +1,12 @@
+
+// test division 
+
+
+fn main() {
+   let five: int;
+   let sum: int;
+   five = 100-600;
+   sum = five / 100;
+   printInt(sum);
+   println();
+}

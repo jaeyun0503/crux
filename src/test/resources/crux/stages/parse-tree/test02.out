@@ -1,0 +1,16 @@
+program
+  declList
+    decl
+      functionDefn
+        paramList
+        stmtBlock
+          stmtList
+            stmt
+              callStmt
+                callExpr
+                  exprList
+                    expr0
+                      expr1
+                        expr2
+                          expr3
+                            literal

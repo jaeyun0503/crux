@@ -1,0 +1,7 @@
+
+// test printBool
+
+fn main() {
+  printBool(true);
+  printBool(false);
+}

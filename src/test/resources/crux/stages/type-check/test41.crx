@@ -1,0 +1,19 @@
+// test nested (boolean) expression
+
+let a: int;
+let b: [int; 1];
+
+
+fn foo() -> bool {
+  return false;
+}
+
+
+fn main() {
+  a = 0;
+  b[0] = 1;
+  let c: bool;
+  if (((!((false))))) {
+     c = (1 > (b[0] - a)) || (foo() || (((true))));
+  }
+}

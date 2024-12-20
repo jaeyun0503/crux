@@ -1,0 +1,9 @@
+// test returning int
+
+fn myInt() -> int {
+  return readInt();
+}
+
+fn main() {
+  printInt(myInt());
+}

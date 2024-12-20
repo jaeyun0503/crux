@@ -1,0 +1,11 @@
+
+main() {
+  a;
+  a = 0;
+  while ((a < 3)) {
+    printInt(a);
+    println();
+    a = (a + 1);
+  }
+}
+
