@@ -1,6 +1,80 @@
 grammar Crux;
 
 // parser rules start w/ lowercase
+literal
+ : Integer
+ | True
+ | False
+ ;
+
+designator
+ : Identifier ('[' expr0 ']')?
+ ;
+
+type
+ : Identifier
+ ;
+
+op0
+ : '>='
+ | '<='
+ | '!='
+ | '=='
+ | '>'
+ | '<'
+ ;
+
+op1
+ : '+'
+ | '-'
+ | '||'
+ ;
+
+op2
+ : '*'
+ | '/'
+ | '&&'
+ ;
+
+expr0
+ : expr1 (op0 expr1)?
+ ;
+
+expr1
+ : expr2
+ | expr1 op1 expr2
+ ;
+
+expr2
+ : expr3
+ | expr2 op2 expr3
+ ;
+
+expr3
+ : '!' expr3
+ | '(' expr0 ')'
+ | designator
+ | callExpr
+ | literal
+ ;
+
+callExpr
+ : Identifier '(' exprList ')'
+ ;
+
+exprList
+ : (expr0 (',' expr0)*)?
+ ;
+
+param
+ : Identifier ':' type
+ ;
+
+paramList
+ : (param (',' param)*)?
+ ;
+
+
 program
  : declList EOF
  ;
@@ -19,15 +93,10 @@ varDecl
  : Let Identifier ':' type ';'
  ;
 
-type
- : Identifier
- ;
 
-literal
- : Integer
- | True
- | False
- ;
+
+
+
 
 
 // lexer rules start w/ uppercase
