@@ -74,29 +74,45 @@ paramList
  : (param (',' param)*)?
  ;
 
+varDecl
+ : Let Identifier ':' type ';'
+ ;
 
-program
- : declList EOF
+ functionDefn
+ : Fn Identifier '(' paramList ')' ('->' type)? stmtBlock
+ ;
+
+decl
+ : varDecl
+// | arrayDecl
+ | functionDefn
  ;
 
 declList
  : decl*
  ;
 
-decl
- : varDecl
-// | arrayDecl
-// | functionDefn
+stmt
+ : callStmt
+ | assignStmt
+ | ifStmt
+ | whileStmt
+ | breakStmt
+ | continueStmt
+ | returnStmt
  ;
 
-varDecl
- : Let Identifier ':' type ';'
+stmtList
+ : stmt*
  ;
 
+stmtBlock
+ : '{' stmtList '}'
+ ;
 
-
-
-
+program
+ : declList EOF
+ ;
 
 
 // lexer rules start w/ uppercase
