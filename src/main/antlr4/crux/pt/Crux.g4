@@ -82,23 +82,46 @@ arrayDecl
  : Let Identifier ':' '[' type ';' Integer ']' ';'
  ;
 
-
-program
- : declList EOF
- ;
-
  functionDefn
  : Fn Identifier '(' paramList ')' ('->' type)? stmtBlock
  ;
 
 decl
  : varDecl
-// | arrayDecl
+ | arrayDecl
  | functionDefn
  ;
 
 declList
  : decl*
+ ;
+
+assignStmt
+ : designator '=' expr0 ';'
+ ;
+
+callStmt
+ : callExpr ';'
+ ;
+
+ifStmt
+ : If expr0 stmtBlock ('else' stmtBlock)?
+ ;
+
+whileStmt
+ : While expr0 stmtBlock
+ ;
+
+breakStmt
+ : Break ';'
+ ;
+
+continueStmt
+ : Continue ';'
+ ;
+
+returnStmt
+ : Return expr0 ';'
  ;
 
 stmt
