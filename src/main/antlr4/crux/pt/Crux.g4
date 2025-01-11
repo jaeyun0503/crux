@@ -78,6 +78,15 @@ varDecl
  : Let Identifier ':' type ';'
  ;
 
+arrayDecl
+ : Let Identifier ':' '[' type ';' Integer ']' ';'
+ ;
+
+
+program
+ : declList EOF
+ ;
+
  functionDefn
  : Fn Identifier '(' paramList ')' ('->' type)? stmtBlock
  ;
