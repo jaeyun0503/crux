@@ -8,7 +8,7 @@ literal
  ;
 
 designator
- : Identifier ('[' expr0 ']')?
+ : Identifier (Open_Bracket expr0 Close_Bracket)?
  ;
 
 type
@@ -16,24 +16,24 @@ type
  ;
 
 op0
- : '>='
- | '<='
- | '!='
- | '=='
- | '>'
- | '<'
+ : Greater_Equal
+ | Lesser_Equal
+ | Not_Equal
+ | Equal
+ | Greater_Than
+ | Less_Than
  ;
 
 op1
- : '+'
- | '-'
- | '||'
+ : Add
+ | Sub
+ | Or
  ;
 
 op2
- : '*'
- | '/'
- | '&&'
+ : Mul
+ | Div
+ | And
  ;
 
 expr0
@@ -51,39 +51,39 @@ expr2
  ;
 
 expr3
- : '!' expr3
- | '(' expr0 ')'
+ : Not expr3
+ | Open_Paren expr0 Close_Paren
  | designator
  | callExpr
  | literal
  ;
 
 callExpr
- : Identifier '(' exprList ')'
+ : Identifier Open_Paren exprList Close_Paren
  ;
 
 exprList
- : (expr0 (',' expr0)*)?
+ : (expr0 (Comma expr0)*)?
  ;
 
 param
- : Identifier ':' type
+ : Identifier Colon type
  ;
 
 paramList
- : (param (',' param)*)?
+ : (param (Comma param)*)?
  ;
 
 varDecl
- : Let Identifier ':' type ';'
+ : Let Identifier Colon type Semicolon
  ;
 
 arrayDecl
- : Let Identifier ':' '[' type ';' Integer ']' ';'
+ : Let Identifier Colon Open_Bracket type Semicolon Integer Close_Bracket Semicolon
  ;
 
- functionDefn
- : Fn Identifier '(' paramList ')' ('->' type)? stmtBlock
+functionDefn
+ : Fn Identifier Open_Paren paramList Close_Paren (Arrow type)? stmtBlock
  ;
 
 decl
@@ -97,15 +97,15 @@ declList
  ;
 
 assignStmt
- : designator '=' expr0 ';'
+ : designator Assign expr0 Semicolon
  ;
 
 callStmt
- : callExpr ';'
+ : callExpr Semicolon
  ;
 
 ifStmt
- : If expr0 stmtBlock ('else' stmtBlock)?
+ : If expr0 stmtBlock (Else stmtBlock)?
  ;
 
 whileStmt
@@ -113,19 +113,20 @@ whileStmt
  ;
 
 breakStmt
- : Break ';'
+ : Break Semicolon
  ;
 
 continueStmt
- : Continue ';'
+ : Continue Semicolon
  ;
 
 returnStmt
- : Return expr0 ';'
+ : Return expr0 Semicolon
  ;
 
 stmt
- : callStmt
+ : varDecl
+ | callStmt
  | assignStmt
  | ifStmt
  | whileStmt
@@ -139,7 +140,7 @@ stmtList
  ;
 
 stmtBlock
- : '{' stmtList '}'
+ : Open_Brace stmtList Close_Brace
  ;
 
 program
