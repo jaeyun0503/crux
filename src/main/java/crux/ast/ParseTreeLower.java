@@ -49,7 +49,15 @@ public final class ParseTreeLower {
    */
 
   public DeclList lower(CruxParser.ProgramContext program) {
-    return null;
+    var pos = makePosition(program);
+    symTab.enter();
+    List<Declaration> declarations = new ArrayList<>();
+    for (CruxParser.DeclContext declCtx : program.declList().decl()) {
+      Declaration d = declCtx.accept(declVisitor);
+      declarations.add(d);
+    }
+    symTab.exit();
+    return new DeclList(pos, declarations);
   }
 
   /**
