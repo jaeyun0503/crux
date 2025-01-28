@@ -294,7 +294,32 @@ public final class ParseTreeLower {
      * Parse Expr0 to OpExpr Node Parsing the expr should be exactly as described in the grammer
      */
     // @Override
-    // public Expression visitExpr0(CruxParser.Expr0Context ctx) {}
+    public Expression visitExpr0(CruxParser.Expr0Context ctx) {
+      if (ctx.op0() == null) {    // expr0 := expr1
+        return ctx.expr1(0).accept(exprVisitor);
+      } else {     // expr0 := expr1 [ op0 expr1 ]
+        Expression left = ctx.expr1(0).accept(exprVisitor);
+        Expression right = ctx.expr1(1).accept(exprVisitor);
+        CruxParser.Op0Context operator = ctx.op0();
+        Operation op = null;
+        if (operator.Greater_Equal() != null) {
+          op = Operation.GE;
+        } else if (operator.Lesser_Equal() != null) {
+          op = Operation.LE;
+        } else if (operator.Not_Equal() != null) {
+          op = Operation.NE;
+        } else if (operator.Equal() != null) {
+          op = Operation.EQ;
+        } else if (operator.Greater_Than() != null) {
+          op = Operation.GT;
+        } else if (operator.Less_Than() != null) {
+          op = Operation.LT;
+        }
+        Position pos = makePosition(ctx);
+        return new OpExpr(pos, op, left, right);
+
+      }
+    }
 
 
     /**
