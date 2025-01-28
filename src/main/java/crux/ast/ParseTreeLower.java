@@ -28,6 +28,17 @@ public final class ParseTreeLower {
     symTab = new SymbolTable(err);
   }
 
+  private Type typeOf(CruxParser.TypeContext ctx) {
+    String text = ctx.getText();
+    if ("int".equals(text))
+      return new IntType();
+    else if ("bool".equals(text))
+      return new BoolType();
+    else if ("void".equals(text))
+      return new VoidType();
+    return new ErrorType("");
+  }
+
   private static Position makePosition(ParserRuleContext ctx) {
     var start = ctx.start;
     return new Position(start.getLine());
@@ -65,7 +76,13 @@ public final class ParseTreeLower {
    *
    * @return a {@link StatementList} AST object.
    */
-  // private StatementList lower(CruxParser.StmtListContext stmtList) {}
+   private StatementList lower(CruxParser.StmtListContext stmtList) {
+     List<Statement> stmts = new ArrayList<>();
+     for (CruxParser.StmtContext stmt : stmtList.stmt()) {
+       stmts.add(stmt.accept(stmtVisitor));
+     }
+     return new StatementList(makePosition(stmtList), stmts);
+   }
 
 
   /**
@@ -73,7 +90,12 @@ public final class ParseTreeLower {
    *
    * @return a {@link StatementList} AST object.
    */
-  // private StatementList lower(CruxParser.StmtBlockContext stmtBlock) {}
+   private StatementList lower(CruxParser.StmtBlockContext stmtBlock) {
+     symTab.enter();
+     StatementList statements = lower(stmtBlock.stmtList());
+     symTab.exit();
+     return statements;
+   }
 
   /**
    * A parse tree visitor to create AST nodes derived from {@link Declaration}
@@ -85,7 +107,13 @@ public final class ParseTreeLower {
      * @return an AST {@link VarDecl}
      */
     // @Override
-    // public VarDecl visitVarDecl(CruxParser.VarDeclContext ctx) {}
+     public VarDecl visitVarDecl(CruxParser.VarDeclContext ctx) {
+       var pos = makePosition(ctx);
+       String name = ctx.Identifier().getText();
+       Type type = typeOf(ctx.type());
+       Symbol symbol = symTab.add(pos, name, type);
+       return new VarDecl(pos, symbol);
+     }
 
 
     /**
