@@ -29,7 +29,7 @@ public final class ParseTreeLower {
   }
 
   private Type typeOf(CruxParser.TypeContext ctx) {
-    String text = ctx.getText();
+    String text = ctx.getText();   // Proning error
     if ("int".equals(text))
       return new IntType();
     else if ("bool".equals(text))
@@ -41,7 +41,7 @@ public final class ParseTreeLower {
 
   private static Position makePosition(ParserRuleContext ctx) {
     var start = ctx.start;
-    return new Position(start.getLine());
+    return new Position(start.getLine());      // Getting error
   }
 
   /**
@@ -139,7 +139,11 @@ public final class ParseTreeLower {
      public Declaration visitFunctionDefn(CruxParser.FunctionDefnContext ctx) {
        var pos = makePosition(ctx);
        String functionName = ctx.Identifier().getText();
-       Type returnType = typeOf(ctx.type());
+       Type returnType;
+       if (ctx.type() != null)
+         returnType = typeOf(ctx.type());
+       else
+         returnType = new VoidType();
 
        List<Type> paramTypes = new ArrayList<>();
        if (ctx.paramList() != null && ctx.paramList().param() != null) {
@@ -442,7 +446,8 @@ public final class ParseTreeLower {
     public Expression visitLiteral(CruxParser.LiteralContext ctx) {
       Position pos = makePosition(ctx);
       if (ctx.Integer() != null) {
-        return new LiteralInt(pos, ctx.Integer().getChildCount());
+        int value = Integer.parseInt(ctx.Integer().getText());
+        return new LiteralInt(pos, value);
       } else if (ctx.True() != null) {
         return new LiteralBool(pos, true);
       }
