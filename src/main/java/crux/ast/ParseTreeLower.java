@@ -1,6 +1,7 @@
 package crux.ast;
 
 import com.sun.source.tree.IdentifierTree;
+import crux.ir.insts.BinaryOperator;
 import crux.pt.CruxBaseVisitor;
 import crux.pt.CruxParser;
 import crux.ast.types.*;
@@ -392,18 +393,28 @@ public final class ParseTreeLower {
         CruxParser.Expr0Context exp = new CruxParser.Expr0Context(ctx, 0);
         return visitExpr0(exp);
       } else {    // ! expr3
-        //TODO: Fix
-
+        Position pos = makePosition(ctx);
+        Expression left = ctx.expr3().accept(exprVisitor);
+        return new OpExpr(pos, OpExpr.Operation.LOGIC_NOT, left, null);
+      }
     }
 
 
     /**
      * Create an FunctionCall Node
      */
-    @Override
+      @Override
     public FunctionCall visitCallExpr(CruxParser.CallExprContext ctx) {
-
-
+      Position pos = makePosition(ctx);
+      Symbol callee = symTab.lookup(pos, ctx.Identifier().getText());
+      CruxParser.ExprListContext el = ctx.exprList();
+      List<Expression> ls = new ArrayList<Expression>();
+      int i = 0;
+      while (el.expr0(i) != null) {
+        ls.add(el.expr0(i).accept(exprVisitor));
+        i++;
+      }
+      return new FunctionCall(pos, callee, ls);
     }
 
 
@@ -418,7 +429,9 @@ public final class ParseTreeLower {
         Symbol sym = symTab.lookup(pos, ctx.Identifier().getText());
         return new ArrayAccess(pos, sym, expr0);      //TODO: Need fix
       }
-      return // TODO: What to return?
+      CruxParser.Expr0Context exp = ctx.expr0();
+      Expression ex = visitExpr0(exp);
+      return ex;   // TODO: What to return? Need fix
     }
 
 
