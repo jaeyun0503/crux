@@ -1,5 +1,6 @@
 package crux.ast;
 
+import com.sun.source.tree.IdentifierTree;
 import crux.pt.CruxBaseVisitor;
 import crux.pt.CruxParser;
 import crux.ast.types.*;
@@ -293,7 +294,7 @@ public final class ParseTreeLower {
     /**
      * Parse Expr0 to OpExpr Node Parsing the expr should be exactly as described in the grammer
      */
-    // @Override
+    @Override
     public Expression visitExpr0(CruxParser.Expr0Context ctx) {
       if (ctx.op0() == null) {    // expr0 := expr1
         return ctx.expr1(0).accept(exprVisitor);
@@ -301,19 +302,19 @@ public final class ParseTreeLower {
         Expression left = ctx.expr1(0).accept(exprVisitor);
         Expression right = ctx.expr1(1).accept(exprVisitor);
         CruxParser.Op0Context operator = ctx.op0();
-        Operation op = null;
+        OpExpr.Operation op = null;
         if (operator.Greater_Equal() != null) {
-          op = Operation.GE;
+          op = OpExpr.Operation.GE;
         } else if (operator.Lesser_Equal() != null) {
-          op = Operation.LE;
+          op = OpExpr.Operation.LE;
         } else if (operator.Not_Equal() != null) {
-          op = Operation.NE;
+          op = OpExpr.Operation.NE;
         } else if (operator.Equal() != null) {
-          op = Operation.EQ;
+          op = OpExpr.Operation.EQ;
         } else if (operator.Greater_Than() != null) {
-          op = Operation.GT;
+          op = OpExpr.Operation.GT;
         } else if (operator.Less_Than() != null) {
-          op = Operation.LT;
+          op = OpExpr.Operation.LT;
         }
         Position pos = makePosition(ctx);
         return new OpExpr(pos, op, left, right);
@@ -325,22 +326,63 @@ public final class ParseTreeLower {
     /**
      * Parse Expr1 to OpExpr Node Parsing the expr should be exactly as described in the grammer
      */
-    // @Override
-    // public Expression visitExpr1(CruxParser.Expr1Context ctx) {}
+    @Override
+    public Expression visitExpr1(CruxParser.Expr1Context ctx) {
+      if (ctx.op1() == null) { // expr1 := expr2
+        return ctx.expr2().accept(exprVisitor);
+      }
+      // expr 1 op1 expr2
+      Expression left = ctx.expr1().accept(exprVisitor);
+      Expression right = ctx.expr2().accept(exprVisitor);
+      CruxParser.Op1Context operator = ctx.op1();
+      OpExpr.Operation op = null;
+      if (operator.Add() != null) {
+        op = OpExpr.Operation.ADD;
+      } else if (operator.Sub() != null) {
+        op = OpExpr.Operation.SUB;
+      } else if (operator.Or() != null) {
+        op = OpExpr.Operation.LOGIC_OR;
+      }
+      Position pos = makePosition(ctx);
+      return new OpExpr(pos, op, left, right);
+    }
 
 
     /**
      * Parse Expr2 to OpExpr Node Parsing the expr should be exactly as described in the grammer
      */
-    // @Override
-    // public Expression visitExpr2(CruxParser.Expr2Context ctx) {}
+    @Override
+    public Expression visitExpr2(CruxParser.Expr2Context ctx) {
+      if (ctx.op2() == null) { // expr3
+        return ctx.expr3().accept(exprVisitor);
+      }
+      // expr2 op2 expr3
+      Expression left = ctx.expr2().accept(exprVisitor);
+      Expression right = ctx.expr3().accept(exprVisitor);
+
+      CruxParser.Op2Context operator = ctx.op2();
+      OpExpr.Operation op = null;
+      if (operator.Mul() != null) {
+        op = OpExpr.Operation.MULT;
+      } else if (operator.Div() != null) {
+        op = OpExpr.Operation.DIV;
+      } else if (operator.And() != null) {
+        op = OpExpr.Operation.LOGIC_AND;
+      }
+      Position pos = makePosition(ctx);
+      return new OpExpr(pos, op, left, right);
+    }
   
 
     /**
      * Parse Expr3 to OpExpr Node Parsing the expr should be exactly as described in the grammer
      */
-    // @Override
-    // public Expression visitExpr3(CruxParser.Expr3Context ctx) {}
+    @Override
+    public Expression visitExpr3(CruxParser.Expr3Context ctx) {
+
+
+
+    }
 
 
     /**
@@ -353,14 +395,30 @@ public final class ParseTreeLower {
     /**
      * visitDesignator will check for a name or ArrayAccess
      */
-    // @Override
-    // public Expression visitDesignator(CruxParser.DesignatorContext ctx) {}
+    @Override
+    public Expression visitDesignator(CruxParser.DesignatorContext ctx) {
+      if (ctx.Open_Bracket() != null) {  // IDENTIFIER [ "[" expr0 "]" ]
+        Expression expr0 = ctx.expr0().accept(exprVisitor);
+        Position pos = makePosition(ctx);
+        return new ArrayAccess(pos, ctx.Identifier(), expr0);      //TODO: Need fix
+      }
+      return // TODO: What to return?
+    }
 
 
     /**
      * Create an Literal Node
      */
-    // @Override
-    // public Expression visitLiteral(CruxParser.LiteralContext ctx) {}
+    @Override
+    public Expression visitLiteral(CruxParser.LiteralContext ctx) {
+      Position pos = makePosition(ctx);
+      if (ctx.Integer() != null) {
+        return new LiteralInt(pos, ctx.Integer().getChildCount());
+      } else if (ctx.True() != null) {
+        return new LiteralBool(pos, true);
+      }
+      return new LiteralBool(pos, false);
+
+    }
   }
 }
