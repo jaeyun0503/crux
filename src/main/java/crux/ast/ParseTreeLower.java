@@ -379,8 +379,20 @@ public final class ParseTreeLower {
      */
     @Override
     public Expression visitExpr3(CruxParser.Expr3Context ctx) {
-
-
+      if (ctx.literal() != null) { // Literal
+        CruxParser.LiteralContext ct = new CruxParser.LiteralContext(ctx, 0);
+        return visitLiteral(ct);
+      } else if (ctx.designator() != null) {  // Designator
+        CruxParser.DesignatorContext dc = new CruxParser.DesignatorContext(ctx, 0);
+        return visitDesignator(dc);
+      } else if (ctx.callExpr() != null) {  // Callexpr
+        CruxParser.CallExprContext cpc = new CruxParser.CallExprContext(ctx, 0);
+        return visitCallExpr(cpc);
+      } else if (ctx.Open_Paren() != null) {  //  expr0
+        CruxParser.Expr0Context exp = new CruxParser.Expr0Context(ctx, 0);
+        return visitExpr0(exp);
+      } else {    // ! expr3
+        //TODO: Fix
 
     }
 
@@ -388,8 +400,11 @@ public final class ParseTreeLower {
     /**
      * Create an FunctionCall Node
      */
-    // @Override
-    // public FunctionCall visitCallExpr(CruxParser.CallExprContext ctx) {}
+    @Override
+    public FunctionCall visitCallExpr(CruxParser.CallExprContext ctx) {
+
+
+    }
 
 
     /**
@@ -400,7 +415,8 @@ public final class ParseTreeLower {
       if (ctx.Open_Bracket() != null) {  // IDENTIFIER [ "[" expr0 "]" ]
         Expression expr0 = ctx.expr0().accept(exprVisitor);
         Position pos = makePosition(ctx);
-        return new ArrayAccess(pos, ctx.Identifier(), expr0);      //TODO: Need fix
+        Symbol sym = symTab.lookup(pos, ctx.Identifier().getText());
+        return new ArrayAccess(pos, sym, expr0);      //TODO: Need fix
       }
       return // TODO: What to return?
     }
