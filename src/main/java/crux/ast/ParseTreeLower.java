@@ -135,48 +135,40 @@ public final class ParseTreeLower {
      *
      * @return an AST {@link FunctionDef}
      */
-     @Override
-     public Declaration visitFunctionDefn(CruxParser.FunctionDefnContext ctx) {
-       var pos = makePosition(ctx);
-       String functionName = ctx.Identifier().getText();
-       Type returnType;
-       if (ctx.type() != null)
-         returnType = typeOf(ctx.type());
-       else
-         returnType = new VoidType();
+    @Override
+    public Declaration visitFunctionDefn(CruxParser.FunctionDefnContext ctx) {
+      var pos = makePosition(ctx);
+      String functionName = ctx.Identifier().getText();
 
-       List<Type> paramTypes = new ArrayList<>();
-       if (ctx.paramList() != null && ctx.paramList().param() != null) {
-         int n = ctx.paramList().param().size();
-         for (int i = 0; i < n; i++) {
-           Type paramType = typeOf(ctx.paramList().param(i).type());
-           paramTypes.add(paramType);
-         }
-       }
+      Type returnType = (ctx.type() == null) ? new VoidType() : typeOf(ctx.type());
+      List<Type> paramTypes = new ArrayList<>();
+      if (ctx.paramList() != null) {
+        for (CruxParser.ParamContext p : ctx.paramList().param()) {
+          paramTypes.add(typeOf(p.type()));
+        }
+      }
+      FuncType functionType = new FuncType(new TypeList(paramTypes), returnType);
 
-       TypeList args = new TypeList(paramTypes);
-       FuncType functionType = new FuncType(args, returnType);
+      Symbol fnSymbol = symTab.add(pos, functionName, functionType);
+      symTab.enter();
 
-       List<Symbol> paramSymbols = new ArrayList<>();
-       symTab.enter();
-       if (ctx.paramList() != null && ctx.paramList().param() != null) {
-         int n = ctx.paramList().param().size();
-         for (int i = 0; i < n; i++) {
-           String paramName = ctx.paramList().param(i).Identifier().getText();
-           Type paramType = paramTypes.get(i);
-           paramSymbols.add(symTab.add(pos, paramName, paramType));
-         }
-       }
-       StatementList statements = lower(ctx.stmtBlock());
-       symTab.exit();
-
-       Symbol symbol = symTab.add(pos, functionName, functionType);
-       return new FunctionDef(pos, symbol, paramSymbols, statements);
-     }
+      List<Symbol> paramSymbols = new ArrayList<>();
+      if (ctx.paramList() != null) {
+        for (int i = 0; i < ctx.paramList().param().size(); i++) {
+          String paramName = ctx.paramList().param(i).Identifier().getText();
+          Type paramType = paramTypes.get(i);
+          paramSymbols.add(symTab.add(pos, paramName, paramType));
+        }
+      }
+      StatementList body = lower(ctx.stmtBlock());
+      symTab.exit();
+      return new FunctionDef(pos, fnSymbol, paramSymbols, body);
+    }
   }
 
 
-  /**
+
+    /**
    * A parse tree visitor to create AST nodes derived from {@link Statement}
    */
 
@@ -423,15 +415,13 @@ public final class ParseTreeLower {
      */
     @Override
     public Expression visitDesignator(CruxParser.DesignatorContext ctx) {
+      Position pos = makePosition(ctx);
+      Symbol sym = symTab.lookup(pos, ctx.Identifier().getText());
       if (ctx.Open_Bracket() != null) {  // IDENTIFIER [ "[" expr0 "]" ]
         Expression expr0 = ctx.expr0().accept(exprVisitor);
-        Position pos = makePosition(ctx);
-        Symbol sym = symTab.lookup(pos, ctx.Identifier().getText());
         return new ArrayAccess(pos, sym, expr0);      //TODO: Need fix
       }
-      CruxParser.Expr0Context exp = ctx.expr0();
-      Expression ex = visitExpr0(exp);
-      return ex;   // TODO: What to return? Need fix
+      return new VarAccess(pos, sym);
     }
 
 
