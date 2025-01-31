@@ -385,17 +385,13 @@ public final class ParseTreeLower {
     @Override
     public Expression visitExpr3(CruxParser.Expr3Context ctx) {
       if (ctx.literal() != null) { // Literal
-        CruxParser.LiteralContext ct = new CruxParser.LiteralContext(ctx, 0);
-        return visitLiteral(ct);
+        return visitLiteral(ctx.literal());
       } else if (ctx.designator() != null) {  // Designator
-        CruxParser.DesignatorContext dc = new CruxParser.DesignatorContext(ctx, 0);
-        return visitDesignator(dc);
+        return visitDesignator(ctx.designator());
       } else if (ctx.callExpr() != null) {  // Callexpr
-        CruxParser.CallExprContext cpc = new CruxParser.CallExprContext(ctx, 0);
-        return visitCallExpr(cpc);
+        return visitCallExpr(ctx.callExpr());
       } else if (ctx.Open_Paren() != null) {  //  expr0
-        CruxParser.Expr0Context exp = new CruxParser.Expr0Context(ctx, 0);
-        return visitExpr0(exp);
+        return visitExpr0(ctx.expr0());
       } else {    // ! expr3
         Position pos = makePosition(ctx);
         Expression left = ctx.expr3().accept(exprVisitor);
