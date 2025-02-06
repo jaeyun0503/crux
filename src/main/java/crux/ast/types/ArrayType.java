@@ -24,8 +24,28 @@ public final class ArrayType extends Type implements java.io.Serializable {
   }
 
   @Override
+  Type index(Type that) {
+    if (that instanceof IntType) {
+      return base;
+    }
+    return super.index(that);
+  }
+
+  @Override
+  Type assign(Type source) {
+    if (source.equivalent(this)) {
+      return this;
+    }
+    return super.assign(source);
+  }
+
+  @Override
   public boolean equivalent(Type that) {
-    return false;
+    if (!(that instanceof ArrayType)) {
+      return false;
+    }
+    ArrayType temp = (ArrayType) that;
+    return this.base.equivalent(temp.base);
   }
 
   @Override
