@@ -64,7 +64,17 @@ public final class TypeChecker {
     public Void visit(VarAccess vaccess) { return null; }
 
     @Override
-    public Void visit(ArrayDecl arrayDecl) { return null; }
+    public Void visit(ArrayDecl arrayDecl) {
+      ArrayType arrayType = (ArrayType) arrayDecl.getSymbol().getType();
+      Type baseType = arrayType.getBase();
+      if (!(baseType instanceof BoolType || baseType instanceof IntType)) {
+        setNodeType(arrayDecl, new ErrorType(""));
+      } else {
+        setNodeType(arrayDecl, arrayType);
+      }
+      lastStatementReturns = false;
+      return null;
+    }
 
     @Override
     public Void visit(Assignment assignment) { return null; }
@@ -109,6 +119,15 @@ public final class TypeChecker {
     public Void visit(StatementList statementList) { return null; }
 
     @Override
-    public Void visit(VarDecl varDecl) { return null; }
+    public Void visit(VarDecl varDecl) {
+      Type varType = varDecl.getSymbol().getType();
+      if (!(varType instanceof BoolType || varType instanceof IntType)) {
+        setNodeType(varDecl, new ErrorType(""));
+      } else {
+        setNodeType(varDecl, varType);
+      }
+      lastStatementReturns = false;
+      return null;
+    }
   }
 }
