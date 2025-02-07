@@ -102,10 +102,28 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(Break brk) { hasBreak = true; lastStatementReturns = false; }
+    public Void visit(Break brk) {
+      hasBreak = true;
+      lastStatementReturns = false;
+      return null;
+    }
 
     @Override
-    public Void visit(FunctionCall functionCall) { return null; }
+    public Void visit(FunctionCall functionCall) {
+      List<Type> argumentTypes = new ArrayList<>();
+      for (Expression arg : functionCall.getArguments()) {
+        arg.accept(this);
+        argumentTypes.add(getType(arg));
+      }
+
+      TypeList argumentListType = new TypeList(argumentTypes);
+      Type funcType = functionCall.getCallee().getType();
+      Type resultType = funcType.call(argumentListType);
+
+      setNodeType(functionCall, resultType);
+      lastStatementReturns = false;
+      return null;
+    }
 
     @Override
     public Void visit(Continue cont) { return null; }
@@ -151,7 +169,27 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(IfElseBranch ifElseBranch) { return null; }
+    public Void visit(IfElseBranch ifElseBranch) {
+      Expression condition = ifElseBranch.getCondition();
+      condition.accept(this);
+
+      Type conditionType = getType(condition);
+
+      if (!(conditionType instanceof BoolType)) {
+        setNodeType(ifElseBranch, new ErrorType(""));
+      }
+
+      boolean thenReturns, elseReturns;
+
+      visit(ifElseBranch.getThenBlock());
+      thenReturns = lastStatementReturns;
+
+      visit(ifElseBranch.getElseBlock());
+      elseReturns = lastStatementReturns;
+
+      lastStatementReturns = thenReturns && elseReturns;
+      return null;
+    }
 
     @Override
     public Void visit(ArrayAccess access) { return null; }
@@ -163,7 +201,23 @@ public final class TypeChecker {
     public Void visit(LiteralInt literalInt) { return null; }
 
     @Override
-    public Void visit(WhileLoop loop) { return null; }
+    public Void visit(WhileLoop loop) {
+      boolean outerHasBreak = hasBreak;
+      hasBreak = false;
+
+      Expression condition = loop.getCondition();
+      condition.accept(this);
+
+      Type conditionType = getType(condition);
+      if (!(conditionType instanceof BoolType)) {
+        setNodeType(loop, new ErrorType(""));
+      }
+
+      visit(loop.getBody());
+      hasBreak = outerHasBreak;
+
+      return null;
+    }
 
     @Override
     public Void visit(OpExpr op) { return null; }
