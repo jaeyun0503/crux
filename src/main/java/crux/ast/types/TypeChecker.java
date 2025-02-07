@@ -80,6 +80,24 @@ public final class TypeChecker {
 
     @Override
     public Void visit(Assignment assignment) {
+      if (assignment.getLocation() instanceof VarAccess) {
+        visit((VarAccess) assignment.getLocation());
+      } else {
+        visit((ArrayAccess) assignment.getLocation());
+      }
+
+      if (assignment.getValue() instanceof LiteralBool) {
+        visit((LiteralBool) assignment.getValue());
+      } else {
+        visit((LiteralInt) assignment.getValue());
+      }
+
+      Type locationType = getType(assignment.getLocation());
+      Type valueType = getType(assignment.getValue());
+      Type result = locationType.assign(valueType);
+
+      setNodeType(assignment, result);
+      lastStatementReturns = false;
       return null;
     }
 
