@@ -5,6 +5,7 @@ import crux.ast.*;
 import crux.ast.traversal.NullNodeVisitor;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,6 +60,7 @@ public final class TypeChecker {
     private Type currentFunctionReturnType;
 
     private boolean lastStatementReturns;
+    private boolean hasBreak;
 
     @Override
     public Void visit(VarAccess vaccess) { return null; }
@@ -82,7 +84,7 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(Break brk) { return null; }
+    public Void visit(Break brk) { hasBreak = true; lastStatementReturns = false; }
 
     @Override
     public Void visit(FunctionCall functionCall) { return null; }
@@ -91,7 +93,12 @@ public final class TypeChecker {
     public Void visit(Continue cont) { return null; }
 
     @Override
-    public Void visit(DeclList declList) { return null; }
+    public Void visit(DeclList declList) {
+      for (Node decl : declList.getChildren()) {
+        decl.accept(this);
+      }
+      return null;
+    }
 
     @Override
     public Void visit(FunctionDef functionDef) {
@@ -147,7 +154,20 @@ public final class TypeChecker {
     public Void visit(Return ret) { return null; }
 
     @Override
-    public Void visit(StatementList statementList) { return null; }
+    public Void visit(StatementList statementList) {
+      lastStatementReturns = false;
+      List<Node> statements = statementList.getChildren();
+      for (int i = 0; i < statements.size(); i++) {
+        Statement statement = (Statement) statements.get(i);
+        statement.accept(this);
+
+        if (lastStatementReturns) {
+          setNodeType(statement, new ErrorType(""));
+        }
+      }
+
+      return null;
+    }
 
     @Override
     public Void visit(VarDecl varDecl) {
