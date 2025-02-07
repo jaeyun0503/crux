@@ -18,7 +18,7 @@ public final class ErrorType extends Type implements java.io.Serializable {
 
   @Override
   public boolean equivalent(Type that) {
-    return false;
+    return (that instanceof ErrorType);
   }
 
   @Override

@@ -77,7 +77,9 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(Assignment assignment) { return null; }
+    public Void visit(Assignment assignment) {
+      return null;
+    }
 
     @Override
     public Void visit(Break brk) { return null; }
