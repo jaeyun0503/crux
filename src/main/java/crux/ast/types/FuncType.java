@@ -33,31 +33,18 @@ public final class FuncType extends Type implements java.io.Serializable {
     }
     TypeList actualArgs = (TypeList) args;
 
-    Iterator<Type> it1 = actualArgs.iterator();
-    Iterator<Type> it2 = this.args.iterator();
-    int i = 0;
-    while(it1.hasNext()) {
-      i++;
-      it1.next();
-    }
-    int j = 0;
-    while (it2.hasNext()) {
-      j++;
-      it2.next();
-    }
-
-    if (i != j) {
+    if (this.args.size() != actualArgs.size()) {
       return new ErrorType(String.format(
               "Wrong number of arguments. Expected %d but got %d.",
-              j, i
+              this.args.size(), actualArgs.size()
       ));
     }
     Iterator<Type> expected = this.args.iterator();
     Iterator<Type> actual = actualArgs.iterator();
 
-    for (int x = 0; x < i; x++) {
+    for (int x = 0; x < this.args.size(); x++) {
       Type expectedType = expected.next();
-      Type actualType     = actual.next();
+      Type actualType = actual.next();
 
       if (!(expectedType.equivalent(actualType))) {
         return new ErrorType("Mismatch in Types of Argument. Expected " + expectedType + " but got " +

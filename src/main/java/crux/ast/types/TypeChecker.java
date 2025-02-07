@@ -64,7 +64,11 @@ public final class TypeChecker {
     private boolean hasBreak;
 
     @Override
-    public Void visit(VarAccess vaccess) { return null; }
+    public Void visit(VarAccess vaccess) {
+      Type temp = vaccess.getSymbol().getType();
+      setNodeType(vaccess, temp);
+      return null;
+    }
 
     @Override
     public Void visit(ArrayDecl arrayDecl) {
@@ -81,17 +85,8 @@ public final class TypeChecker {
 
     @Override
     public Void visit(Assignment assignment) {
-      if (assignment.getLocation() instanceof VarAccess) {
-        visit((VarAccess) assignment.getLocation());
-      } else {
-        visit((ArrayAccess) assignment.getLocation());
-      }
-
-      if (assignment.getValue() instanceof LiteralBool) {
-        visit((LiteralBool) assignment.getValue());
-      } else {
-        visit((LiteralInt) assignment.getValue());
-      }
+      assignment.getLocation().accept(this);
+      assignment.getValue().accept(this);
 
       Type locationType = getType(assignment.getLocation());
       Type valueType = getType(assignment.getValue());
@@ -127,7 +122,10 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(Continue cont) { return null; }
+    public Void visit(Continue cont) {
+      lastStatementReturns = false;
+      return null;         // TODO: Need fix
+    }
 
     @Override
     public Void visit(DeclList declList) {
@@ -164,8 +162,8 @@ public final class TypeChecker {
         setNodeType(functionDef, new ErrorType(""));
       }
 
-//      currentFunctionSymbol = null;
-//      currentFunctionReturnType = null;
+      currentFunctionSymbol = null;
+      currentFunctionReturnType = null;
       return null;
     }
 
@@ -193,13 +191,28 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(ArrayAccess access) { return null; }
+    public Void visit(ArrayAccess access) {
+      access.getIndex().accept(this);
+
+      Type arrayType = access.getBase().getType();
+      Type indexType = getType(access.getIndex());
+
+      Type temp = arrayType.index(indexType);
+      setNodeType(access, temp);
+      return null;
+    }
 
     @Override
-    public Void visit(LiteralBool literalBool) { return null; }
+    public Void visit(LiteralBool literalBool) {
+      setNodeType(literalBool, new BoolType());
+      return null;
+    }
 
     @Override
-    public Void visit(LiteralInt literalInt) { return null; }
+    public Void visit(LiteralInt literalInt) {
+      setNodeType(literalInt, new IntType());
+      return null;
+    }
 
     @Override
     public Void visit(WhileLoop loop) {
@@ -221,24 +234,57 @@ public final class TypeChecker {
     }
 
     @Override
-    public Void visit(OpExpr op) { return null; }
+    public Void visit(OpExpr op) {
+      op.getLeft().accept(this);
+      if (op.getRight() != null) {
+        op.getRight().accept(this);
+      }
+
+      Type leftType = getType(op.getLeft());
+      Type rightType = (op.getRight() == null) ? new VoidType() : getType(op.getRight());
+
+      Type result;
+      switch (op.getOp()) {
+        case ADD:
+          result = leftType.add(rightType);
+          break;
+        case SUB:
+          result = leftType.sub(rightType);
+          break;
+        case MULT:
+          result = leftType.mul(rightType);
+          break;
+        case DIV:
+          result = leftType.div(rightType);
+          break;
+        case LOGIC_AND:
+          result = leftType.and(rightType);
+          break;
+        case LOGIC_OR:
+          result = leftType.or(rightType);
+          break;
+        case LOGIC_NOT:
+          result = leftType.not();
+          break;
+        case GT:
+        case GE:
+        case LT:
+        case LE:
+        case EQ:
+        case NE:
+          result = leftType.compare(rightType);
+          break;
+        default:
+          result = new ErrorType("Wrong operation: " + op.getOp());
+      }
+
+      setNodeType(op, result);
+      return null;
+    }
 
     @Override
     public Void visit(Return ret) {
-      Expression exp = ret.getValue();
-      if (exp instanceof ArrayAccess) {
-        visit((ArrayAccess) exp);
-      } else if (exp instanceof FunctionCall) {
-        visit((FunctionCall) exp);
-      } else if (exp instanceof LiteralBool) {
-        visit((LiteralBool) exp);
-      } else if(exp instanceof LiteralInt) {
-        visit((LiteralInt) exp);
-      } else if (exp instanceof OpExpr) {
-        visit((OpExpr) exp);
-      } else {
-        visit((VarAccess) exp);
-      }
+      ret.getValue().accept(this);
       Type valueType = getType(ret.getValue());
       if (currentFunctionReturnType == null) {
         setNodeType(ret, new ErrorType("null return"));
@@ -262,7 +308,8 @@ public final class TypeChecker {
         statement.accept(this);
 
         if (lastStatementReturns) {
-          setNodeType(statement, new ErrorType(""));
+//          setNodeType(statement, new ErrorType(""));
+          break;
         }
       }
 

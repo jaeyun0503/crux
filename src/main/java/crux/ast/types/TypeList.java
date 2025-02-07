@@ -34,6 +34,10 @@ public final class TypeList extends Type implements Iterable<Type>, java.io.Seri
     return list.isEmpty();
   }
 
+  public int size() {
+    return list.size();
+  }
+
   @Override
   public boolean equivalent(Type that) {
     if (!(that instanceof TypeList)) {
@@ -41,26 +45,13 @@ public final class TypeList extends Type implements Iterable<Type>, java.io.Seri
     }
     TypeList temp = (TypeList) that;
 
-    Iterator<Type> it1 = temp.iterator();
-    Iterator<Type> it2 = this.iterator();
-    int i = 0;
-    while(it1.hasNext()) {
-      i++;
-      it1.next();
-    }
-    int j = 0;
-    while (it2.hasNext()) {
-      j++;
-      it2.next();
-    }
-
-    if (i != j) {
+    if (this.size() != temp.size()) {
       return false;
     }
     Iterator<Type> expected = this.iterator();
     Iterator<Type> actual = temp.iterator();
 
-    for (int x = 0; x < i; x++) {
+    for (int x = 0; x < this.size(); x++) {
       Type expectedType = expected.next();
       Type actualType     = actual.next();
 
