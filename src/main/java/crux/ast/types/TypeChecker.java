@@ -92,7 +92,36 @@ public final class TypeChecker {
     public Void visit(DeclList declList) { return null; }
 
     @Override
-    public Void visit(FunctionDef functionDef) { return null; }
+    public Void visit(FunctionDef functionDef) {
+      currentFunctionSymbol = functionDef.getSymbol();
+      FuncType functionType = (FuncType) currentFunctionSymbol.getType();
+      currentFunctionReturnType = functionType.getRet();
+
+      if (currentFunctionSymbol.getName().equals("main")) {
+        if (!(currentFunctionReturnType instanceof VoidType)) {
+          setNodeType(functionDef, new ErrorType(""));
+        }
+        if (!functionType.getArgs().isEmpty()) {
+          setNodeType(functionDef, new ErrorType(""));
+        }
+      }
+
+      for (Type arg : functionType.getArgs()) {
+        if (!(arg instanceof BoolType || arg instanceof IntType)) {
+          setNodeType(functionDef, new ErrorType(""));
+        }
+      }
+
+      visit(functionDef.getStatements());
+
+      if (!(currentFunctionReturnType instanceof VoidType) && !lastStatementReturns) {
+        setNodeType(functionDef, new ErrorType(""));
+      }
+
+      currentFunctionSymbol = null;
+      currentFunctionReturnType = null;
+      return null;
+    }
 
     @Override
     public Void visit(IfElseBranch ifElseBranch) { return null; }
