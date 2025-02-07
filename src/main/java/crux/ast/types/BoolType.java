@@ -27,8 +27,6 @@ public final class BoolType extends Type implements java.io.Serializable {
     return new BoolType();
   }
 
-  //TODO: Do i need compare for Booltype??
-
   Type assign(Type source) {
     if (equivalent(source)) {
       return new BoolType();

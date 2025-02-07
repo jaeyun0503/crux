@@ -125,7 +125,10 @@ public final class ParseTreeLower {
      public Declaration visitArrayDecl(CruxParser.ArrayDeclContext ctx) {
        var pos = makePosition(ctx);
        String name = ctx.Identifier().getText();
-       Symbol symbol = symTab.add(pos, name, new VoidType()); // TODO: fix type
+       Type type = typeOf(ctx.type());
+       int len = Integer.parseInt(ctx.Integer().getText());
+       Type arraytype = new ArrayType(len, type);
+       Symbol symbol = symTab.add(pos, name, arraytype);
        return new ArrayDecl(pos, symbol);
      }
 

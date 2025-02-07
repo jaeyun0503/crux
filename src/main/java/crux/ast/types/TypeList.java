@@ -36,7 +36,39 @@ public final class TypeList extends Type implements Iterable<Type>, java.io.Seri
 
   @Override
   public boolean equivalent(Type that) {
-    return false;
+    if (!(that instanceof TypeList)) {
+      return false;
+    }
+    TypeList temp = (TypeList) that;
+
+    Iterator<Type> it1 = temp.iterator();
+    Iterator<Type> it2 = this.iterator();
+    int i = 0;
+    while(it1.hasNext()) {
+      i++;
+      it1.next();
+    }
+    int j = 0;
+    while (it2.hasNext()) {
+      j++;
+      it2.next();
+    }
+
+    if (i != j) {
+      return false;
+    }
+    Iterator<Type> expected = this.iterator();
+    Iterator<Type> actual = temp.iterator();
+
+    for (int x = 0; x < i; x++) {
+      Type expectedType = expected.next();
+      Type actualType     = actual.next();
+
+      if (!(expectedType.equivalent(actualType))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
