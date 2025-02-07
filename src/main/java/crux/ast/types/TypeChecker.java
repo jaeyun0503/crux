@@ -6,6 +6,7 @@ import crux.ast.traversal.NullNodeVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,8 +164,8 @@ public final class TypeChecker {
         setNodeType(functionDef, new ErrorType(""));
       }
 
-      currentFunctionSymbol = null;
-      currentFunctionReturnType = null;
+//      currentFunctionSymbol = null;
+//      currentFunctionReturnType = null;
       return null;
     }
 
@@ -223,7 +224,34 @@ public final class TypeChecker {
     public Void visit(OpExpr op) { return null; }
 
     @Override
-    public Void visit(Return ret) { return null; }
+    public Void visit(Return ret) {
+      Expression exp = ret.getValue();
+      if (exp instanceof ArrayAccess) {
+        visit((ArrayAccess) exp);
+      } else if (exp instanceof FunctionCall) {
+        visit((FunctionCall) exp);
+      } else if (exp instanceof LiteralBool) {
+        visit((LiteralBool) exp);
+      } else if(exp instanceof LiteralInt) {
+        visit((LiteralInt) exp);
+      } else if (exp instanceof OpExpr) {
+        visit((OpExpr) exp);
+      } else {
+        visit((VarAccess) exp);
+      }
+      Type valueType = getType(ret.getValue());
+      if (currentFunctionReturnType == null) {
+        setNodeType(ret, new ErrorType("null return"));
+      } else {
+        Type temp = currentFunctionReturnType.assign(valueType);
+        if (temp instanceof ErrorType)
+          setNodeType(ret, temp);
+        else
+          setNodeType(ret, new VoidType());
+      }
+      lastStatementReturns = true;
+      return null;
+    }
 
     @Override
     public Void visit(StatementList statementList) {
