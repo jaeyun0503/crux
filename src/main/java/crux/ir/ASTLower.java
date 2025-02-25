@@ -144,7 +144,7 @@ public final class ASTLower implements NodeVisitor<InstPair> {
       GlobalDecl globalDecl = new GlobalDecl(varDecl.getSymbol(), size);
       mCurrentProgram.addGlobalVar(globalDecl);
     } else {
-      LocalVar localVar = mCurrentFunction.getTempVar(varDecl.getType());
+      LocalVar localVar = mCurrentFunction.getTempVar(varDecl.getSymbol().getType());
       mCurrentLocalVarMap.put(varDecl.getSymbol(), localVar);
     }
 
@@ -177,14 +177,15 @@ public final class ASTLower implements NodeVisitor<InstPair> {
     Symbol symbol = name.getSymbol();
     if (mCurrentLocalVarMap.containsKey(symbol)) {    // Local
       LocalVar src = mCurrentLocalVarMap.get(symbol);
-      LocalVar temp = mCurrentFunction.getTempVar(symbol.getType());
-      CopyInst copy = new CopyInst(temp, src);
-      return new InstPair(copy, copy, temp);
+      Instruction inst = new NopInst();
+      return new InstPair(inst, inst, src);
     } else {     // Global
       LocalVar temp = mCurrentFunction.getTempVar(symbol.getType());
       AddressVar addr = mCurrentFunction.getTempAddressVar(symbol.getType());
+      AddressAt addrAt = new AddressAt(addr, symbol);
       LoadInst load = new LoadInst(temp, addr);
-      return new InstPair(load, load, temp);
+      addrAt.setNext(0, load);
+      return new InstPair(addrAt, load, temp);
     }
   }
 
@@ -193,34 +194,78 @@ public final class ASTLower implements NodeVisitor<InstPair> {
    * If the location is a VarAccess to a LocalVar, copy the value to it. If the location is a
    * VarAccess to a global, store the value. If the location is ArrayAccess, store the value.
    */
+//  @Override
+//  public InstPair visit(Assignment assignment) {
+//    InstPair rhsPair = assignment.getValue().accept(this);
+//    Node target = assignment.getLocation();
+//    Instruction assignInst = null;
+//
+//    if (target instanceof VarAccess) {
+//      VarAccess varAccess = (VarAccess) target;
+//      Symbol sym = varAccess.getSymbol();
+//
+//      // Local variable
+//      if (mCurrentLocalVarMap.containsKey(sym)) {
+//        LocalVar dest = mCurrentLocalVarMap.get(sym);
+//        CopyInst copyInst = new CopyInst(dest, rhsPair.getValue());
+//        return new InstPair(rhsPair.getStart(), copyInst);
+//      } else {
+//      // Global variable
+//        AddressVar addrVar = mCurrentFunction.getTempAddressVar(sym.getType());
+//        AddressAt addrAt = new AddressAt(addrVar, sym);
+//        addrAt.setNext(0, rhsPair.getStart());
+//        StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
+//        return new InstPair(addrAt, storeInst);
+//      }
+//    } else if (target instanceof ArrayAccess) { // Array
+//      InstPair visitIndex = ((Node) ((ArrayAccess) target).getIndex()).accept(this);
+//      Type arrType = ((ArrayType)((ArrayAccess) target).getBase().getType()).getBase();
+//      AddressVar addrVar = mCurrentFunction.getTempAddressVar(arrType);
+//      AddressAt addrAt = new AddressAt(addrVar, ((ArrayAccess) target).getBase(), (LocalVar) visitIndex.getValue());
+//      visitIndex.getEnd().setNext(0, addrAt);
+//      addrAt.setNext(0, rhsPair.getStart());
+//      StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
+//      rhsPair.getEnd().setNext(0, storeInst);
+//      return new InstPair(rhsPair.getStart(), storeInst);
+//    }
+//
+//    return null;
+//  }
   @Override
   public InstPair visit(Assignment assignment) {
-    InstPair rhsPair = assignment.getValue().accept(this);
     Node target = assignment.getLocation();
-    Instruction assignInst = null;
 
     if (target instanceof VarAccess) {
       VarAccess varAccess = (VarAccess) target;
       Symbol sym = varAccess.getSymbol();
 
-      // Local variable
       if (mCurrentLocalVarMap.containsKey(sym)) {
+        InstPair rhsPair = assignment.getValue().accept(this);
         LocalVar dest = mCurrentLocalVarMap.get(sym);
         CopyInst copyInst = new CopyInst(dest, rhsPair.getValue());
-        assignInst = copyInst;
+        rhsPair.getEnd().setNext(0, copyInst);
+        return new InstPair(rhsPair.getStart(), copyInst);
       } else {
-      // Global variable
-        AddressVar addrVar = mCurrentFunction.getTempAddressVar(sym.getType());
-        StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
-        assignInst = storeInst;
+        AddressVar addr = mCurrentFunction.getTempAddressVar(sym.getType());
+        AddressAt addrAt = new AddressAt(addr, sym);
+        InstPair rhsPair = assignment.getValue().accept(this);
+        addrAt.setNext(0, rhsPair.getStart());
+        StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addr);
+        rhsPair.getEnd().setNext(0, storeInst);
+        return new InstPair(addrAt, storeInst);
       }
-      rhsPair.getEnd().setNext(0, assignInst);
-      return new InstPair(rhsPair.getStart(), assignInst);
-    } else if (target instanceof ArrayAccess) { // Array
-      InstPair arrayAddrPair = assignment.getLocation().accept(this);
-      StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), (AddressVar) arrayAddrPair.getValue());
-      arrayAddrPair.getEnd().setNext(0, storeInst);
-      return new InstPair(rhsPair.getStart(), storeInst);
+    } else if (target instanceof ArrayAccess) {
+      ArrayAccess arrayAccess = (ArrayAccess) target;
+      InstPair indexPair = ((Node) arrayAccess.getIndex()).accept(this);
+      InstPair rhsPair = assignment.getValue().accept(this);
+      Type baseType = ((ArrayType) arrayAccess.getBase().getType()).getBase();
+      AddressVar addrVar = mCurrentFunction.getTempAddressVar(baseType);
+      AddressAt addrAt = new AddressAt(addrVar, arrayAccess.getBase(), (LocalVar) indexPair.getValue());
+      indexPair.getEnd().setNext(0, addrAt);
+      addrAt.setNext(0, rhsPair.getStart());
+      StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
+      rhsPair.getEnd().setNext(0, storeInst);
+      return new InstPair(indexPair.getStart(), storeInst);
     }
 
     return null;
@@ -307,16 +352,15 @@ public final class ASTLower implements NodeVisitor<InstPair> {
    */
   @Override
   public InstPair visit(ArrayAccess access) {
+    Type arrayType = ((ArrayType)access.getBase().getType()).getBase();
+    AddressVar baseAddr = mCurrentFunction.getTempAddressVar(arrayType);
+    LocalVar localVar = mCurrentFunction.getTempVar(arrayType);
     InstPair indexPair = access.getIndex().accept(this);
-    AddressVar baseAddr = mCurrentFunction.getTempAddressVar(access.getBase().getType());
-    AddressVar computedAddr = mCurrentFunction.getTempAddressVar(access.getBase().getType());
-    AddressAt addrAt = new AddressAt(computedAddr, access.getBase(), (LocalVar) indexPair.getValue());
+    AddressAt addrAt = new AddressAt(baseAddr, access.getBase(), (LocalVar) indexPair.getValue());
     indexPair.getEnd().setNext(0, addrAt);
-
-    LocalVar loaded = mCurrentFunction.getTempVar(access.getType());
-    LoadInst loadInst = new LoadInst(loaded, computedAddr);
+    LoadInst loadInst = new LoadInst(localVar, baseAddr);
     addrAt.setNext(0, loadInst);
-    return new InstPair(indexPair.getStart(), loadInst, loaded);
+    return new InstPair(indexPair.getStart(), loadInst, localVar);
   }
 
 
