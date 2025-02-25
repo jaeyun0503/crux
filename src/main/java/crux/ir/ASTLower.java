@@ -6,6 +6,7 @@ import crux.ast.traversal.NodeVisitor;
 import crux.ast.types.*;
 import crux.ir.insts.*;
 
+import java.beans.Expression;
 import java.util.*;
 
 class InstPair {
@@ -101,7 +102,7 @@ public final class ASTLower implements NodeVisitor<InstPair> {
     mCurrentProgram.addFunction(mCurrentFunction);
 
     // visit the function body
-    InstPair bodyPair = functionDef.accept(this);
+    InstPair bodyPair = functionDef.getStatements().accept(this);
     // set the starting instruction of mCurrentFunction
     if (bodyPair != null) {
       mCurrentFunction.setStart(bodyPair.getStart());
@@ -172,7 +173,20 @@ public final class ASTLower implements NodeVisitor<InstPair> {
    * LocalVar.
    */
   @Override
-  public InstPair visit(VarAccess name) { return null; }
+  public InstPair visit(VarAccess name) {
+    Symbol symbol = name.getSymbol();
+    if (mCurrentLocalVarMap.containsKey(symbol)) {    // Local
+      LocalVar src = mCurrentLocalVarMap.get(symbol);
+      LocalVar temp = mCurrentFunction.getTempVar(symbol.getType());
+      CopyInst copy = new CopyInst(temp, src);
+      return new InstPair(copy, copy, temp);
+    } else {     // Global
+      LocalVar temp = mCurrentFunction.getTempVar(symbol.getType());
+      AddressVar addr = mCurrentFunction.getTempAddressVar(symbol.getType());
+      LoadInst load = new LoadInst(temp, addr);
+      return new InstPair(load, load, temp);
+    }
+  }
 
 
   /**
@@ -180,13 +194,66 @@ public final class ASTLower implements NodeVisitor<InstPair> {
    * VarAccess to a global, store the value. If the location is ArrayAccess, store the value.
    */
   @Override
-  public InstPair visit(Assignment assignment) { return null; }
+  public InstPair visit(Assignment assignment) {
+    InstPair rhsPair = assignment.getValue().accept(this);
+    Node target = assignment.getLocation();
+    Instruction assignInst = null;
+
+    if (target instanceof VarAccess) {
+      VarAccess varAccess = (VarAccess) target;
+      Symbol sym = varAccess.getSymbol();
+
+      // Local variable
+      if (mCurrentLocalVarMap.containsKey(sym)) {
+        LocalVar dest = mCurrentLocalVarMap.get(sym);
+        CopyInst copyInst = new CopyInst(dest, rhsPair.getValue());
+        assignInst = copyInst;
+      } else {
+      // Global variable
+        AddressVar addrVar = mCurrentFunction.getTempAddressVar(sym.getType());
+        StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
+        assignInst = storeInst;
+      }
+      rhsPair.getEnd().setNext(0, assignInst);
+      return new InstPair(rhsPair.getStart(), assignInst);
+    } else if (target instanceof ArrayAccess) { // Array
+      InstPair arrayAddrPair = assignment.getLocation().accept(this);
+      StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), (AddressVar) arrayAddrPair.getValue());
+      arrayAddrPair.getEnd().setNext(0, storeInst);
+      return new InstPair(rhsPair.getStart(), storeInst);
+    }
+
+    return null;
+  }
 
   /**
    * Lower a FunctionCall.
    */
   @Override
-  public InstPair visit(FunctionCall functionCall) { return null; }
+  public InstPair visit(FunctionCall functionCall) {
+    List<LocalVar> argValues = new ArrayList<>();
+    Instruction start = null;
+    Instruction last = null;
+
+    for (Node arg : functionCall.getArguments()) {
+      InstPair argPair = arg.accept(this);
+      if (start == null) {
+        start = argPair.getStart();
+      } else {
+        last.setNext(0, argPair.getStart());
+      }
+      last = argPair.getEnd();
+      argValues.add((LocalVar) argPair.getValue());
+    }
+    LocalVar result = mCurrentFunction.getTempVar(functionCall.getType());
+    CallInst callInst = new CallInst(result, functionCall.getCallee(), argValues);
+    if (last != null) {
+      last.setNext(0, callInst);
+      return new InstPair(start, callInst, result);
+    } else {
+      return new InstPair(callInst, callInst, result);
+    }
+  }
 
 
   /**
@@ -194,61 +261,173 @@ public final class ASTLower implements NodeVisitor<InstPair> {
    * or, not)
    */
   @Override
-  public InstPair visit(OpExpr operation) { return null; }
+  public InstPair visit(OpExpr operation) {
+    OpExpr.Operation op = operation.getOp();
+    if (op == OpExpr.Operation.LOGIC_NOT) {    // Unary
+      InstPair operandPair = operation.getLeft().accept(this);
+      LocalVar result = mCurrentFunction.getTempVar(operation.getType());
+      UnaryNotInst notInst = new UnaryNotInst(result, (LocalVar) operandPair.getValue());
+      operandPair.getEnd().setNext(0, notInst);
+      return new InstPair(operandPair.getStart(), notInst, result);
+
+    } else {
+      InstPair leftPair = operation.getLeft().accept(this);
+      InstPair rightPair = operation.getRight().accept(this);
+      leftPair.getEnd().setNext(0, rightPair.getStart());
+      LocalVar result = mCurrentFunction.getTempVar(operation.getType());
+
+      if (op == OpExpr.Operation.ADD || op == OpExpr.Operation.SUB || op == OpExpr.Operation.MULT || op == OpExpr.Operation.DIV) {
+        BinaryOperator.Op temp;
+        if (op == OpExpr.Operation.ADD) {temp = BinaryOperator.Op.Add;}
+        else if (op == OpExpr.Operation.SUB) {temp = BinaryOperator.Op.Sub;}
+        else if (op == OpExpr.Operation.MULT) {temp = BinaryOperator.Op.Mul;}
+        else {temp = BinaryOperator.Op.Div;}
+        BinaryOperator binOp = new BinaryOperator(temp, result, (LocalVar) leftPair.getValue(), (LocalVar) rightPair.getValue());
+        rightPair.getEnd().setNext(0, binOp);
+        return new InstPair(leftPair.getStart(), binOp, result);
+      } else {
+        CompareInst.Predicate temp;
+        if (op == OpExpr.Operation.GE) {temp = CompareInst.Predicate.GE;}
+        else if (op == OpExpr.Operation.GT) {temp = CompareInst.Predicate.GT;}
+        else if (op == OpExpr.Operation.LE) {temp = CompareInst.Predicate.LE;}
+        else if (op == OpExpr.Operation.LT) {temp = CompareInst.Predicate.LT;}
+        else if (op == OpExpr.Operation.EQ) {temp = CompareInst.Predicate.EQ;}
+        else {temp = CompareInst.Predicate.NE;}
+
+        CompareInst cmpInst = new CompareInst(result, temp, (LocalVar) leftPair.getValue(), (LocalVar) rightPair.getValue());
+        rightPair.getEnd().setNext(0, cmpInst);
+        return new InstPair(leftPair.getStart(), cmpInst, result);
+      }
+    }
+  }
 
 
   /**
    * It should compute the address into the array, do the load, and return the value in a LocalVar.
    */
   @Override
-  public InstPair visit(ArrayAccess access) { return null; }
+  public InstPair visit(ArrayAccess access) {
+    InstPair indexPair = access.getIndex().accept(this);
+    AddressVar baseAddr = mCurrentFunction.getTempAddressVar(access.getBase().getType());
+    AddressVar computedAddr = mCurrentFunction.getTempAddressVar(access.getBase().getType());
+    AddressAt addrAt = new AddressAt(computedAddr, access.getBase(), (LocalVar) indexPair.getValue());
+    indexPair.getEnd().setNext(0, addrAt);
+
+    LocalVar loaded = mCurrentFunction.getTempVar(access.getType());
+    LoadInst loadInst = new LoadInst(loaded, computedAddr);
+    addrAt.setNext(0, loadInst);
+    return new InstPair(indexPair.getStart(), loadInst, loaded);
+  }
 
 
   /**
    * Copy the literal into a tempVar
    */
   @Override
-  public InstPair visit(LiteralBool literalBool) { return null; }
+  public InstPair visit(LiteralBool literalBool) {
+    LocalVar result = mCurrentFunction.getTempVar(literalBool.getType());
+    BooleanConstant constant = BooleanConstant.get(mCurrentProgram, literalBool.getValue());
+    CopyInst copy = new CopyInst(result, constant);
+    return new InstPair(copy, copy, result);
+  }
 
 
   /**
    * Copy the literal into a tempVar
    */
   @Override
-  public InstPair visit(LiteralInt literalInt) { return null; }
+  public InstPair visit(LiteralInt literalInt) {
+    LocalVar result = mCurrentFunction.getTempVar(literalInt.getType());
+    IntegerConstant constant = IntegerConstant.get(mCurrentProgram, literalInt.getValue());
+    CopyInst copy = new CopyInst(result, constant);
+    return new InstPair(copy, copy, result);
+  }
 
 
   /**
    * Lower a Return.
    */
   @Override
-  public InstPair visit(Return ret) { return null; }
+  public InstPair visit(Return ret) {
+    if (ret.getValue() != null) {
+      InstPair exprPair = ret.getValue().accept(this);
+      ReturnInst retInst = new ReturnInst((LocalVar) exprPair.getValue());
+      exprPair.getEnd().setNext(0, retInst);
+      return new InstPair(exprPair.getStart(), retInst);
+    } else {
+      ReturnInst retInst = new ReturnInst(null);
+      return new InstPair(retInst, retInst);
+    }
+  }
 
 
   /**
    * Break Node
    */
   @Override
-  public InstPair visit(Break brk) { return null; }
+  public InstPair visit(Break brk) {
+    LocalVar trueVar = mCurrentFunction.getTempVar(new BoolType());
+    BooleanConstant trueConst = BooleanConstant.get(mCurrentProgram, true);
+    CopyInst copyInst = new CopyInst(trueVar, trueConst);
+    JumpInst jump = new JumpInst(trueVar);
+    copyInst.setNext(0, jump);
+    return new InstPair(copyInst, jump);
+  }
 
 
   /**
    * Continue Node
    */
   @Override
-  public InstPair visit(Continue cnt) { return null; }
+  public InstPair visit(Continue cnt) {
+    LocalVar trueVar = mCurrentFunction.getTempVar(new BoolType());
+    BooleanConstant trueConst = BooleanConstant.get(mCurrentProgram, true);
+    CopyInst copyInst = new CopyInst(trueVar, trueConst);
+    JumpInst jump = new JumpInst(trueVar);
+    copyInst.setNext(0, jump);
+    return new InstPair(copyInst, jump);
+  }
 
 
   /**
    * Control Structures Make sure to correctly connect the branches and the join block
    */
   @Override
-  public InstPair visit(IfElseBranch ifElseBranch) { return null; }
+  public InstPair visit(IfElseBranch ifElseBranch) {
+    InstPair condPair = ifElseBranch.getCondition().accept(this);
+    JumpInst jump = new JumpInst((LocalVar) condPair.getValue());
+    condPair.getEnd().setNext(0, jump);
+    InstPair thenPair = ifElseBranch.getThenBlock().accept(this);
+    InstPair elsePair = ifElseBranch.getElseBlock().accept(this);
+
+    jump.setNext(0, thenPair.getStart());
+    jump.setNext(1, elsePair.getStart());
+
+    NopInst join = new NopInst();
+    thenPair.getEnd().setNext(0, join);
+    elsePair.getEnd().setNext(0, join);
+    return new InstPair(condPair.getStart(), join);
+  }
 
 
   /**
    * Loop Structures Make sure to correctly connect the loop condition to the body
    */
   @Override
-  public InstPair visit(WhileLoop loop) { return null; }
+  public InstPair visit(WhileLoop loop) {
+    NopInst condStart = new NopInst();
+    InstPair condPair = loop.getCondition().accept(this);
+    condStart.setNext(0, condPair.getStart());
+
+    JumpInst jumpCond = new JumpInst((LocalVar) condPair.getValue());
+    condPair.getEnd().setNext(0, jumpCond);
+    NopInst join = new NopInst();
+
+    InstPair bodyPair = loop.getBody().accept(this);
+    bodyPair.getEnd().setNext(0, condStart);
+    jumpCond.setNext(0, bodyPair.getStart());
+    jumpCond.setNext(1, join);
+
+    return new InstPair(condStart, join);
+  }
 }
