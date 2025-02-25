@@ -194,43 +194,6 @@ public final class ASTLower implements NodeVisitor<InstPair> {
    * If the location is a VarAccess to a LocalVar, copy the value to it. If the location is a
    * VarAccess to a global, store the value. If the location is ArrayAccess, store the value.
    */
-//  @Override
-//  public InstPair visit(Assignment assignment) {
-//    InstPair rhsPair = assignment.getValue().accept(this);
-//    Node target = assignment.getLocation();
-//    Instruction assignInst = null;
-//
-//    if (target instanceof VarAccess) {
-//      VarAccess varAccess = (VarAccess) target;
-//      Symbol sym = varAccess.getSymbol();
-//
-//      // Local variable
-//      if (mCurrentLocalVarMap.containsKey(sym)) {
-//        LocalVar dest = mCurrentLocalVarMap.get(sym);
-//        CopyInst copyInst = new CopyInst(dest, rhsPair.getValue());
-//        return new InstPair(rhsPair.getStart(), copyInst);
-//      } else {
-//      // Global variable
-//        AddressVar addrVar = mCurrentFunction.getTempAddressVar(sym.getType());
-//        AddressAt addrAt = new AddressAt(addrVar, sym);
-//        addrAt.setNext(0, rhsPair.getStart());
-//        StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
-//        return new InstPair(addrAt, storeInst);
-//      }
-//    } else if (target instanceof ArrayAccess) { // Array
-//      InstPair visitIndex = ((Node) ((ArrayAccess) target).getIndex()).accept(this);
-//      Type arrType = ((ArrayType)((ArrayAccess) target).getBase().getType()).getBase();
-//      AddressVar addrVar = mCurrentFunction.getTempAddressVar(arrType);
-//      AddressAt addrAt = new AddressAt(addrVar, ((ArrayAccess) target).getBase(), (LocalVar) visitIndex.getValue());
-//      visitIndex.getEnd().setNext(0, addrAt);
-//      addrAt.setNext(0, rhsPair.getStart());
-//      StoreInst storeInst = new StoreInst((LocalVar) rhsPair.getValue(), addrVar);
-//      rhsPair.getEnd().setNext(0, storeInst);
-//      return new InstPair(rhsPair.getStart(), storeInst);
-//    }
-//
-//    return null;
-//  }
   @Override
   public InstPair visit(Assignment assignment) {
     Node target = assignment.getLocation();
@@ -308,7 +271,7 @@ public final class ASTLower implements NodeVisitor<InstPair> {
   @Override
   public InstPair visit(OpExpr operation) {
     OpExpr.Operation op = operation.getOp();
-    if (op == OpExpr.Operation.LOGIC_NOT) {    // Unary
+    if (op == OpExpr.Operation.LOGIC_NOT) {
       InstPair operandPair = operation.getLeft().accept(this);
       LocalVar result = mCurrentFunction.getTempVar(operation.getType());
       UnaryNotInst notInst = new UnaryNotInst(result, (LocalVar) operandPair.getValue());
@@ -320,43 +283,38 @@ public final class ASTLower implements NodeVisitor<InstPair> {
       JumpInst jump = new JumpInst((LocalVar) leftPair.getValue());
       leftPair.getEnd().setNext(0, jump);
 
-      // Then branch: if left is true, set result = 1.
       NopInst thenBlock = new NopInst();
       CopyInst copyTrue = new CopyInst(result, BooleanConstant.get(mCurrentProgram, true));
       thenBlock.setNext(0, copyTrue);
 
-      // Else branch: evaluate right.
       InstPair rightPair = operation.getRight().accept(this);
       CopyInst copyRight = new CopyInst(result, (LocalVar) rightPair.getValue());
       rightPair.getEnd().setNext(0, copyRight);
 
       NopInst join = new NopInst();
-      jump.setNext(1, thenBlock);            // if x is true.
-      jump.setNext(0, rightPair.getStart());   // if x is false.
+      jump.setNext(1, thenBlock);
+      jump.setNext(0, rightPair.getStart());
 
       copyTrue.setNext(0, join);
       copyRight.setNext(0, join);
       return new InstPair(leftPair.getStart(), join, result);
     } else if (op == OpExpr.Operation.LOGIC_AND) {
-      // x && y is lowered as: if (x) then y else false.
       InstPair leftPair = operation.getLeft().accept(this);
       LocalVar result = mCurrentFunction.getTempVar(operation.getType());
       JumpInst jump = new JumpInst((LocalVar) leftPair.getValue());
       leftPair.getEnd().setNext(0, jump);
 
-      // Then branch: evaluate right.
       InstPair rightPair = operation.getRight().accept(this);
       CopyInst copyRight = new CopyInst(result, (LocalVar) rightPair.getValue());
       rightPair.getEnd().setNext(0, copyRight);
 
-      // Else branch: set result = 0.
       NopInst elseBlock = new NopInst();
       CopyInst copyFalse = new CopyInst(result, BooleanConstant.get(mCurrentProgram, false));
       elseBlock.setNext(0, copyFalse);
 
       NopInst join = new NopInst();
-      jump.setNext(1, rightPair.getStart()); // if x is true, evaluate y.
-      jump.setNext(0, elseBlock);            // if x is false, result is false.
+      jump.setNext(1, rightPair.getStart());
+      jump.setNext(0, elseBlock);
 
       copyRight.setNext(0, join);
       copyFalse.setNext(0, join);
