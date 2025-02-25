@@ -314,6 +314,53 @@ public final class ASTLower implements NodeVisitor<InstPair> {
       UnaryNotInst notInst = new UnaryNotInst(result, (LocalVar) operandPair.getValue());
       operandPair.getEnd().setNext(0, notInst);
       return new InstPair(operandPair.getStart(), notInst, result);
+    } else if (op == OpExpr.Operation.LOGIC_OR) {
+      InstPair leftPair = operation.getLeft().accept(this);
+      LocalVar result = mCurrentFunction.getTempVar(operation.getType());
+      JumpInst jump = new JumpInst((LocalVar) leftPair.getValue());
+      leftPair.getEnd().setNext(0, jump);
+
+      // Then branch: if left is true, set result = 1.
+      NopInst thenBlock = new NopInst();
+      CopyInst copyTrue = new CopyInst(result, IntegerConstant.get(mCurrentProgram, 1));
+      thenBlock.setNext(0, copyTrue);
+
+      // Else branch: evaluate right.
+      InstPair rightPair = operation.getRight().accept(this);
+      CopyInst copyRight = new CopyInst(result, (LocalVar) rightPair.getValue());
+      rightPair.getEnd().setNext(0, copyRight);
+
+      NopInst join = new NopInst();
+      jump.setNext(1, thenBlock);            // if x is true.
+      jump.setNext(0, rightPair.getStart());   // if x is false.
+
+      copyTrue.setNext(0, join);
+      copyRight.setNext(0, join);
+      return new InstPair(leftPair.getStart(), join, result);
+    } else if (op == OpExpr.Operation.LOGIC_AND) {
+      // x && y is lowered as: if (x) then y else false.
+      InstPair leftPair = operation.getLeft().accept(this);
+      LocalVar result = mCurrentFunction.getTempVar(operation.getType());
+      JumpInst jump = new JumpInst((LocalVar) leftPair.getValue());
+      leftPair.getEnd().setNext(0, jump);
+
+      // Then branch: evaluate right.
+      InstPair rightPair = operation.getRight().accept(this);
+      CopyInst copyRight = new CopyInst(result, (LocalVar) rightPair.getValue());
+      rightPair.getEnd().setNext(0, copyRight);
+
+      // Else branch: set result = 0.
+      NopInst elseBlock = new NopInst();
+      CopyInst copyFalse = new CopyInst(result, IntegerConstant.get(mCurrentProgram, 0));
+      elseBlock.setNext(0, copyFalse);
+
+      NopInst join = new NopInst();
+      jump.setNext(1, rightPair.getStart()); // if x is true, evaluate y.
+      jump.setNext(0, elseBlock);            // if x is false, result is false.
+
+      copyRight.setNext(0, join);
+      copyFalse.setNext(0, join);
+      return new InstPair(leftPair.getStart(), join, result);
 
     } else {
       InstPair leftPair = operation.getLeft().accept(this);
@@ -477,8 +524,8 @@ public final class ASTLower implements NodeVisitor<InstPair> {
 
     InstPair bodyPair = loop.getBody().accept(this);
     bodyPair.getEnd().setNext(0, condStart);
-    jumpCond.setNext(0, bodyPair.getStart());
-    jumpCond.setNext(1, join);
+    jumpCond.setNext(1, bodyPair.getStart());
+    jumpCond.setNext(0, join);
 
     return new InstPair(condStart, join);
   }
