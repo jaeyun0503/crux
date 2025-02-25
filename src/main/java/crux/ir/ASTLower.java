@@ -398,14 +398,22 @@ public final class ASTLower implements NodeVisitor<InstPair> {
     JumpInst jump = new JumpInst((LocalVar) condPair.getValue());
     condPair.getEnd().setNext(0, jump);
     InstPair thenPair = ifElseBranch.getThenBlock().accept(this);
-    InstPair elsePair = ifElseBranch.getElseBlock().accept(this);
+    jump.setNext(1, thenPair.getStart());
 
-    jump.setNext(0, thenPair.getStart());
-    jump.setNext(1, elsePair.getStart());
+    InstPair elsePair = null;
+    if (ifElseBranch.getElseBlock() != null) {
+      elsePair = ifElseBranch.getElseBlock().accept(this);
+      jump.setNext(0, elsePair.getStart());
+    } else {
+      Instruction noElseBlock = new NopInst();
+      jump.setNext(0, noElseBlock);
+      elsePair = new InstPair(noElseBlock, noElseBlock);
+    }
 
     NopInst join = new NopInst();
     thenPair.getEnd().setNext(0, join);
     elsePair.getEnd().setNext(0, join);
+
     return new InstPair(condPair.getStart(), join);
   }
 
