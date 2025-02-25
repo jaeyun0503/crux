@@ -322,7 +322,7 @@ public final class ASTLower implements NodeVisitor<InstPair> {
 
       // Then branch: if left is true, set result = 1.
       NopInst thenBlock = new NopInst();
-      CopyInst copyTrue = new CopyInst(result, IntegerConstant.get(mCurrentProgram, 1));
+      CopyInst copyTrue = new CopyInst(result, BooleanConstant.get(mCurrentProgram, true));
       thenBlock.setNext(0, copyTrue);
 
       // Else branch: evaluate right.
@@ -351,7 +351,7 @@ public final class ASTLower implements NodeVisitor<InstPair> {
 
       // Else branch: set result = 0.
       NopInst elseBlock = new NopInst();
-      CopyInst copyFalse = new CopyInst(result, IntegerConstant.get(mCurrentProgram, 0));
+      CopyInst copyFalse = new CopyInst(result, BooleanConstant.get(mCurrentProgram, false));
       elseBlock.setNext(0, copyFalse);
 
       NopInst join = new NopInst();

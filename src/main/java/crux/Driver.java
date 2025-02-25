@@ -48,7 +48,7 @@ public final class Driver {
   private boolean serialize = false;
 
   // Set this flag to false if earlier stages in your compiler do not work.
-  private final boolean supportsEndToEnd = true;
+  private final boolean supportsEndToEnd = false;
 
   private String inputFile;
   private InputStream inputStream;
