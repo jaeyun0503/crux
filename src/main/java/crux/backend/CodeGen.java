@@ -40,7 +40,7 @@ public final class CodeGen extends InstVisitor {
   public void genCode() {
     for (Iterator<GlobalDecl> globalIterator = p.getGlobals(); globalIterator.hasNext();) {
       GlobalDecl globalDecl = globalIterator.next();
-      out.printCode(".comm " + globalDecl.getSymbol().getName() + "," + (globalDecl.getNumElement().getValue() * 8) + ", 8");
+      out.printCode(".comm " + globalDecl.getSymbol().getName() + "," + (globalDecl.getNumElement().getValue() * 8) + ",8");
     }
 
     int count[] = new int[1];
@@ -109,7 +109,8 @@ public final class CodeGen extends InstVisitor {
     LocalVar offset = i.getOffset();
     int destSlot = getStackIndex(dest);
 
-    out.printCode(String.format("movq %s@GOTPCREL(%%rip), %%r11", base.getName()));
+    out.printCode(String.format("leaq %s(%%rip), %%r11", base.getName()));
+
     if (offset != null) {
       int offsetSlot = getStackIndex(offset);
       out.printCode(String.format("movq -%d(%%rbp), %%r10", offsetSlot * 8));
@@ -195,7 +196,10 @@ public final class CodeGen extends InstVisitor {
     LocalVar destination = i.getDst();
     AddressVar sourceAddress = i.getSrcAddress();
     int destinationSlot = getStackIndex(destination);
-    out.printCode(String.format("movq 0(%s), %%rax", sourceAddress.getName()));
+    int sourceSlot = getStackIndex(sourceAddress);
+
+    out.printCode(String.format("movq -%d(%%rbp), %%r11", sourceSlot * 8));
+    out.printCode("movq (%r11), %rax");
     out.printCode(String.format("movq %%rax, -%d(%%rbp)", destinationSlot * 8));
   }
 
@@ -208,9 +212,13 @@ public final class CodeGen extends InstVisitor {
   public void visit(StoreInst i) {
     LocalVar srcValue = i.getSrcValue();
     AddressVar destAddress = i.getDestAddress();
-    int slot = getStackIndex(srcValue);
-    out.printCode(String.format("movq -%d(%%rbp), %%rax", slot * 8));
-    out.printCode(String.format("movq %%rax, (%s)", destAddress.getName()));
+
+    int srcValueSlot = getStackIndex(srcValue);
+    int destAddrSlot = getStackIndex(destAddress);
+
+    out.printCode(String.format("movq -%d(%%rbp), %%r10", srcValueSlot * 8));
+    out.printCode(String.format("movq -%d(%%rbp), %%r11", destAddrSlot * 8));
+    out.printCode("movq %r10, (%r11)");
   }
 
   @Override
