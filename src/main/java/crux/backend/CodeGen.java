@@ -265,6 +265,11 @@ public final class CodeGen extends InstVisitor {
       int numPushed = numParams - argRegisters.length;
       out.printCode(String.format("addq $%d, %%rsp", numPushed * 8));
     }
+
+    if (i.getDst() != null) {
+      int destSlot = getStackIndex(i.getDst());
+      out.printCode(String.format("movq %%rax, -%d(%%rbp)", destSlot * 8)); // ✅ Save return value
+    }
   }
 
   @Override
